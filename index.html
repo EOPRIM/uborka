@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>График уборки</title>
+<meta name="theme-color" id="themeColorMeta" content="#4F7A68">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Уборка">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" id="faviconLink" href="">
+<link rel="apple-touch-icon" id="appleIconLink" href="">
+<link rel="manifest" id="manifestLink" href="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF2ED;
+    --bg-image: none;
+    --surface:#FFFFFF;
+    --text:#223028;
+    --text-secondary:#64756A;
+    --accent:#4F7A68;
+    --accent-soft:#DCE8E1;
+    --warn:#C0654A;
+    --border:#DAE3DC;
+    --radius-lg:20px;
+    --radius-md:14px;
+    --radius-sm:9px;
+    --shadow: 0 1px 2px rgba(20,30,25,0.06), 0 6px 20px rgba(20,30,25,0.05);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; min-height:100%; }
+  body{
+    background-color: var(--bg);
+    background-image: var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: var(--text);
+    font-family:'Work Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 110px;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    letter-spacing: -0.01em;
+    margin:0;
+  }
+  button{ font-family: inherit; }
+  #app{ max-width: 640px; margin: 0 auto; padding: 18px 16px 0; }
+
+  .topbar{
+    display:flex; align-items:center; gap:12px; padding: 6px 2px 14px;
+  }
+  .topbar .brand{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+  .brand-icon{ font-size:1.7rem; line-height:1; }
+  .topbar h1{ font-size:1.4rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
+    background:var(--surface); color:var(--text); font-size:1.15rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .icon-btn:hover{ border-color: var(--accent); }
+
+  .progress-card{
+    background: var(--surface); border-radius: var(--radius-lg); padding:16px 18px;
+    box-shadow: var(--shadow); margin-bottom:18px;
+  }
+  .progress-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; gap:10px;}
+  .progress-top .label{ color:var(--text-secondary); font-size:0.92rem; }
+  .progress-top .count{ font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; }
+  .progress-track{ height:9px; border-radius:999px; background:var(--accent-soft); overflow:hidden; }
+  .progress-fill{ height:100%; background:var(--accent); border-radius:999px; transition: width 0.4s ease; }
+  @media (prefers-reduced-motion: reduce){ .progress-fill{ transition:none; } }
+  .progress-note{ margin-top:8px; font-size:0.82rem; color:var(--text-secondary); }
+
+  .empty-state{
+    text-align:center; padding: 48px 20px; color:var(--text-secondary);
+  }
+  .empty-state .display{ color:var(--text); font-size:1.2rem; margin-bottom:8px; }
+
+  .category{
+    background: var(--surface); border-radius: var(--radius-lg); margin-bottom:14px;
+    box-shadow: var(--shadow); overflow:hidden; border-left: 5px solid var(--cat-color, var(--accent));
+  }
+  .category-head{
+    display:flex; align-items:center; gap:12px; padding:14px 14px 14px 12px; cursor:pointer;
+  }
+  .category-emoji{ font-size:1.5rem; flex:none; }
+  .category-name{ flex:1; min-width:0; }
+  .category-name .display{ font-size:1.08rem; }
+  .category-sub-count{ font-size:0.78rem; color:var(--text-secondary); margin-top:1px; }
+  .badge{
+    font-size:0.78rem; color:var(--text-secondary); background:var(--bg); border-radius:999px;
+    padding:3px 9px; flex:none;
+  }
+  .chevron{ transition: transform 0.2s ease; color:var(--text-secondary); flex:none; }
+  @media (prefers-reduced-motion: reduce){ .chevron{ transition:none; } }
+  .category.open .chevron{ transform: rotate(180deg); }
+  .menu-btn{
+    background:none; border:none; color:var(--text-secondary); font-size:1.2rem; cursor:pointer;
+    padding:4px 6px; flex:none; border-radius:8px;
+  }
+  .menu-btn:hover{ background: var(--bg); color:var(--text); }
+
+  .category-body{ display:none; padding: 0 14px 14px; }
+  .category.open .category-body{ display:block; }
+
+  .subcategory{ margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .subcategory:first-child{ border-top:none; }
+  .subcategory-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .subcategory-head .sub-name{ font-weight:600; font-size:0.94rem; flex:1; min-width:0; }
+  .small-add{
+    border:1px dashed var(--border); background:none; color:var(--text-secondary);
+    border-radius:999px; font-size:0.78rem; padding:5px 11px; cursor:pointer;
+  }
+  .small-add:hover{ border-color:var(--accent); color:var(--accent); }
+
+  .task-row{ display:flex; align-items:center; gap:10px; padding:7px 0; }
+  .task-check{
+    width:22px; height:22px; border-radius:7px; border:2px solid var(--border);
+    background:var(--surface); flex:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:0.85rem;
+  }
+  .task-check.done{ background:var(--accent); border-color:var(--accent); }
+  .task-name{ flex:1; min-width:0; font-size:0.94rem; }
+  .task-name.done{ color:var(--text-secondary); text-decoration: line-through; text-decoration-color: var(--border); }
+  .freq-chip{ font-size:0.72rem; color:var(--text-secondary); background:var(--bg); border-radius:999px; padding:3px 8px; flex:none; }
+  .freq-chip.overdue{ color:var(--warn); background:color-mix(in srgb, var(--warn) 14%, var(--bg)); }
+
+  .add-subcat-row{ margin-top:8px; }
+
+  .fab-row{
+    position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 55%, transparent);
+    pointer-events:none;
+  }
+  .fab{
+    pointer-events:auto;
+    background: var(--accent); color:#fff; border:none; border-radius: 999px;
+    padding: 13px 22px; font-size:0.98rem; font-weight:600; box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    cursor:pointer; display:flex; align-items:center; gap:8px;
+  }
+
+  /* Modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,26,22,0.45); display:none;
+    align-items:flex-end; justify-content:center; z-index:50; padding:0;
+  }
+  .overlay.show{ display:flex; }
+  @media (min-width:640px){ .overlay{ align-items:center; } }
+  .sheet{
+    background: var(--surface); color:var(--text); width:100%; max-width:520px;
+    border-radius: 22px 22px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    max-height:88vh; overflow-y:auto;
+  }
+  @media (min-width:640px){ .sheet{ border-radius:22px; margin-bottom:40px; } }
+  .sheet h2{ font-size:1.2rem; margin-bottom:14px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:0.84rem; color:var(--text-secondary); margin-bottom:6px; }
+  .field input[type=text], .field select{
+    width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--border);
+    background: var(--bg); color:var(--text); font-size:0.98rem; font-family:inherit;
+  }
+  .field input[type=text]:focus, .field select:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .emoji-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .emoji-opt{
+    width:42px; height:42px; border-radius:12px; border:1px solid var(--border); background:var(--bg);
+    font-size:1.25rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .emoji-opt.selected{ border-color: var(--accent); background: var(--accent-soft); }
+  .color-row{ display:flex; align-items:center; gap:12px; }
+  .color-row input[type=color]{ width:46px; height:38px; border:none; border-radius:10px; padding:0; background:none; cursor:pointer; }
+  .sheet-actions{ display:flex; gap:10px; margin-top:18px; }
+  .btn{
+    flex:1; padding:12px; border-radius:12px; border:none; font-size:0.95rem; font-weight:600; cursor:pointer;
+  }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-ghost{ background:var(--bg); color:var(--text); }
+  .btn-danger-text{ background:none; color:var(--warn); text-decoration:underline; padding:12px; font-size:0.9rem; cursor:pointer; border:none; }
+
+  /* Settings sheet extras */
+  .preset-row{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; }
+  .preset-swatch{
+    flex:none; width:64px; text-align:center; cursor:pointer; border:none; background:none; color:var(--text);
+    font-family:inherit; font-size:0.76rem;
+  }
+  .preset-swatch .dot{
+    width:44px; height:44px; border-radius:50%; margin:0 auto 6px; border:2px solid var(--border);
+  }
+  .settings-section{ margin-bottom:18px; }
+  .settings-section h3{ font-size:0.9rem; color:var(--text-secondary); margin-bottom:10px; font-weight:600; }
+  .file-btn{
+    display:inline-block; padding:9px 14px; border-radius:999px; border:1px dashed var(--border);
+    color:var(--text-secondary); font-size:0.85rem; cursor:pointer;
+  }
+  .link-btn{ background:none; border:none; color:var(--accent); text-decoration:underline; font-size:0.88rem; padding:0; cursor:pointer; }
+
+  .install-steps{ font-size:0.92rem; line-height:1.55; color:var(--text); }
+  .install-steps b{ font-weight:600; }
+
+  .toast{
+    position:fixed; left:50%; bottom:100px; transform:translateX(-50%);
+    background: var(--text); color: var(--bg); padding:10px 18px; border-radius:999px;
+    font-size:0.85rem; opacity:0; pointer-events:none; transition:opacity 0.25s ease; z-index:80;
+  }
+  .toast.show{ opacity:1; }
+
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon" id="brandIcon">🧺</span>
+      <h1>График уборки</h1>
+    </div>
+    <button class="icon-btn" id="settingsBtn" aria-label="Настройки оформления">⚙️</button>
+  </header>
+
+  <div class="progress-card">
+    <div class="progress-top">
+      <span class="label">Сегодня</span>
+      <span class="count" id="progressCount">0/0</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-note" id="progressNote"></div>
+  </div>
+
+  <main id="categoriesList"></main>
+</div>
+
+<div class="fab-row"><button class="fab" id="addCategoryBtn">＋ Категория</button></div>
+
+<!-- Category modal -->
+<div class="overlay" id="categoryOverlay">
+  <div class="sheet">
+    <h2 id="categoryModalTitle">Новая категория</h2>
+    <div class="field">
+      <label for="categoryNameInput">Название</label>
+      <input type="text" id="categoryNameInput" placeholder="Например, Кухня">
+    </div>
+    <div class="field">
+      <label>Иконка</label>
+      <div class="emoji-grid" id="categoryEmojiGrid"></div>
+    </div>
+    <div class="field">
+      <label for="categoryColorInput">Цвет категории</label>
+      <div class="color-row"><input type="color" id="categoryColorInput" value="#4F7A68"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="categoryCancelBtn">Отмена</button>
+      <button class="btn btn-primary" id="categorySaveBtn">Сохранить</button>
+    </div>
+    <button class="btn-danger-text" id="categoryDeleteBtn" style="display:none;">Удалить категорию</button>
+  </div>
+</div>
+
+<!-- Subcategory modal -->
+<div class="overlay" id="subcatOverlay">
+  <div class="sheet">
+    <h2 id="subcatModalTitle">Новая подкатегория</h2>
+    <div class="field">
+      <label for="subcatNameInput">Название</label>
+      <input type="text" id="subcatNameInput" placeholder="Например, Плита и духовка">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="subcatCancelBtn">Отмена</button>
+      <button class="btn btn-primary" id="subcatSaveBtn">Сохранить</button>
+    </div>
+    <button class="btn-danger-text" id="subcatDeleteBtn" style="display:none;">Удалить подкатегорию</button>
+  </div>
+</div>
+
+<!-- Task modal -->
+<div class="overlay" id="taskOverlay">
+  <div class="sheet">
+    <h2 id="taskModalTitle">Новая задача</h2>
+    <div class="field">
+      <label for="taskNameInput">Название</label>
+      <input type="text" id="taskNameInput" placeholder="Например, Протереть плиту">
+    </div>
+    <div class="field">
+      <label for="taskFreqInput">Периодичность</label>
+      <select id="taskFreqInput">
+        <option value="1">Каждый день</option>
+        <option value="2">Через день</option>
+        <option value="7" selected>Раз в неделю</option>
+        <option value="14">Раз в 2 недели</option>
+        <option value="30">Раз в месяц</option>
+        <option value="once">Разовая задача</option>
+      </select>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="taskCancelBtn">Отмена</button>
+      <button class="btn btn-primary" id="taskSaveBtn">Сохранить</button>
+    </div>
+    <button class="btn-danger-text" id="taskDeleteBtn" style="display:none;">Удалить задачу</button>
+  </div>
+</div>
+
+<!-- Settings / theme modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <h2>Оформление</h2>
+
+    <div class="settings-section">
+      <h3>Готовые темы</h3>
+      <div class="preset-row" id="presetRow"></div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Фон</h3>
+      <div class="color-row" style="margin-bottom:10px;">
+        <input type="color" id="bgColorInput">
+        <span style="font-size:0.85rem; color:var(--text-secondary);">Цвет фона</span>
+      </div>
+      <label class="file-btn" for="bgImageInput">Загрузить изображение фона</label>
+      <input type="file" id="bgImageInput" accept="image/*" style="display:none;">
+      <div><button class="link-btn" id="clearBgImageBtn" style="margin-top:8px; display:none;">Убрать изображение фона</button></div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Цвета</h3>
+      <div class="color-row" style="margin-bottom:10px;">
+        <input type="color" id="textColorInput"><span style="font-size:0.85rem; color:var(--text-secondary);">Цвет текста</span>
+      </div>
+      <div class="color-row" style="margin-bottom:10px;">
+        <input type="color" id="surfaceColorInput"><span style="font-size:0.85rem; color:var(--text-secondary);">Цвет карточек</span>
+      </div>
+      <div class="color-row">
+        <input type="color" id="accentColorInput"><span style="font-size:0.85rem; color:var(--text-secondary);">Акцентный цвет</span>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Телефон</h3>
+      <button class="link-btn" id="installHelpBtn">Как добавить иконку на экран телефона</button>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="resetThemeBtn">Сбросить оформление</button>
+      <button class="btn btn-primary" id="settingsCloseBtn">Готово</button>
+    </div>
+  </div>
+</div>
+
+<!-- Install help modal -->
+<div class="overlay" id="installOverlay">
+  <div class="sheet">
+    <h2>Иконка на главном экране</h2>
+    <div class="install-steps" id="installStepsText"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-primary" id="installCloseBtn">Понятно</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = 'clean-schedule:state';
+
+  var CATEGORY_EMOJIS = ['🍽️','🛁','🛏️','🛋️','🪟','🧺','🧹','🧽','🚿','🪣','🧴','🗑️','🌿','📦','🚪','🐾'];
+  var FREQ_LABELS = { '1':'Каждый день', '2':'Через день', '7':'Раз в неделю', '14':'Раз в 2 недели', '30':'Раз в месяц', 'once':'Разово' };
+
+  var PRESETS = [
+    { id:'sage',     name:'Мятный',    bg:'#EEF2ED', surface:'#FFFFFF', text:'#223028', textSecondary:'#64756A', accent:'#4F7A68' },
+    { id:'midnight', name:'Ночной',    bg:'#1B1F23', surface:'#262B30', text:'#EDEFF1', textSecondary:'#9AA3AC', accent:'#5B9BD9' },
+    { id:'blush',    name:'Розовый',   bg:'#FBF1EF', surface:'#FFFFFF', text:'#3A2A28', textSecondary:'#8A6F6B', accent:'#C0654A' },
+    { id:'ocean',    name:'Морской',   bg:'#EAF3F5', surface:'#FFFFFF', text:'#1F3A3E', textSecondary:'#5C7B7F', accent:'#2E7D8C' },
+    { id:'sand',     name:'Песочный',  bg:'#F6F1E7', surface:'#FFFFFF', text:'#3B3226', textSecondary:'#8A7F68', accent:'#A9773A' }
+  ];
+
+  function defaultTheme(){
+    return { bg:'#EEF2ED', surface:'#FFFFFF', text:'#223028', textSecondary:'#64756A', accent:'#4F7A68', bgImage:null };
+  }
+
+  function defaultData(){
+    return [
+      { id:genId(), name:'Кухня', icon:'🍽️', color:'#4F7A68', open:true, subcategories:[
+        { id:genId(), name:'Плита и духовка', tasks:[
+          { id:genId(), name:'Протереть плиту', frequencyDays:1, lastDone:null, doneOnce:false },
+          { id:genId(), name:'Почистить духовку', frequencyDays:30, lastDone:null, doneOnce:false }
+        ]},
+        { id:genId(), name:'Холодильник', tasks:[
+          { id:genId(), name:'Протереть полки', frequencyDays:14, lastDone:null, doneOnce:false }
+        ]}
+      ]},
+      { id:genId(), name:'Ванная', icon:'🛁', color:'#2E7D8C', open:false, subcategories:[
+        { id:genId(), name:'Сантехника', tasks:[
+          { id:genId(), name:'Почистить раковину', frequencyDays:2, lastDone:null, doneOnce:false },
+          { id:genId(), name:'Помыть ванну или душ', frequencyDays:7, lastDone:null, doneOnce:false }
+        ]}
+      ]},
+      { id:genId(), name:'Гостиная', icon:'🛋️', color:'#A9773A', open:false, subcategories:[
+        { id:genId(), name:'Общее', tasks:[
+          { id:genId(), name:'Пропылесосить', frequencyDays:7, lastDone:null, doneOnce:false },
+          { id:genId(), name:'Протереть пыль', frequencyDays:7, lastDone:null, doneOnce:false }
+        ]}
+      ]}
+    ];
+  }
+
+  var state = { theme: defaultTheme(), categories: [] };
+
+  function genId(){ return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8); }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function daysSince(dateStr){
+    if(!dateStr) return Infinity;
+    var a = new Date(dateStr+'T00:00:00'), b = new Date(todayStr()+'T00:00:00');
+    return Math.round((b-a)/86400000);
+  }
+  function isDoneToday(t){
+    if(t.frequencyDays === null) return !!t.doneOnce;
+    return t.lastDone === todayStr();
+  }
+  function isDue(t){
+    if(t.frequencyDays === null) return !t.doneOnce;
+    return daysSince(t.lastDone) >= t.frequencyDays;
+  }
+  function isOverdue(t){
+    if(t.frequencyDays === null) return false;
+    return t.lastDone !== null && daysSince(t.lastDone) > t.frequencyDays;
+  }
+
+  // ---------- Persistence ----------
+  async function loadState(){
+    try{
+      var res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value){
+        var parsed = JSON.parse(res.value);
+        if(parsed && parsed.categories){
+          state.theme = Object.assign(defaultTheme(), parsed.theme || {});
+          state.categories = parsed.categories;
+          return;
+        }
+      }
+    }catch(e){ /* no saved state yet */ }
+    state.theme = defaultTheme();
+    state.categories = defaultData();
+    saveState();
+  }
+
+  var saveTimer = null;
+  function saveState(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async function(){
+      try{
+        await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+      }catch(e){
+        showToast('Не удалось сохранить изменения');
+      }
+    }, 150);
+  }
+
+  // ---------- Theme ----------
+  function applyTheme(){
+    var t = state.theme;
+    var root = document.documentElement.style;
+    root.setProperty('--bg', t.bg);
+    root.setProperty('--surface', t.surface);
+    root.setProperty('--text', t.text);
+    root.setProperty('--text-secondary', t.textSecondary);
+    root.setProperty('--accent', t.accent);
+    root.setProperty('--accent-soft', softenColor(t.accent));
+    root.setProperty('--bg-image', t.bgImage ? 'url(' + t.bgImage + ')' : 'none');
+    document.getElementById('themeColorMeta').setAttribute('content', t.accent);
+    generateIcon(t.accent);
+  }
+
+  function softenColor(hex){
+    var rgb = hexToRgb(hex);
+    if(!rgb) return '#DCE8E1';
+    var r = Math.round(rgb.r + (255-rgb.r)*0.82);
+    var g = Math.round(rgb.g + (255-rgb.g)*0.82);
+    var b = Math.round(rgb.b + (255-rgb.b)*0.82);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  function hexToRgb(hex){
+    var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? { r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16) } : null;
+  }
+
+  function generateIcon(accent){
+    try{
+      var canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 512;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = accent; ctx.fillRect(0,0,512,512);
+      ctx.font = '300px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🧺', 256, 290);
+      var dataUrl = canvas.toDataURL('image/png');
+      document.getElementById('faviconLink').setAttribute('href', dataUrl);
+      document.getElementById('appleIconLink').setAttribute('href', dataUrl);
+      var manifest = {
+        name: 'График уборки', short_name: 'Уборка', start_url: '.',
+        display: 'standalone', background_color: state.theme.bg, theme_color: accent,
+        icons: [{ src: dataUrl, sizes:'512x512', type:'image/png' }]
+      };
+      var blob = new Blob([JSON.stringify(manifest)], { type:'application/json' });
+      document.getElementById('manifestLink').setAttribute('href', URL.createObjectURL(blob));
+    }catch(e){ /* icon generation best-effort */ }
+  }
+
+  // ---------- Rendering ----------
+  function render(){
+    renderProgress();
+    renderCategories();
+  }
+
+  function renderProgress(){
+    var active = [];
+    state.categories.forEach(function(c){
+      c.subcategories.forEach(function(s){
+        s.tasks.forEach(function(t){
+          if(isDue(t) || isDoneToday(t)) active.push(t);
+        });
+      });
+    });
+    var done = active.filter(isDoneToday).length;
+    var total = active.length;
+    var pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById('progressCount').textContent = done + '/' + total;
+    document.getElementById('progressFill').style.width = pct + '%';
+    var note = document.getElementById('progressNote');
+    if(total === 0){ note.textContent = 'На сегодня задач нет — можно отдохнуть.'; }
+    else if(done === total){ note.textContent = 'Всё сделано на сегодня 🎉'; }
+    else { note.textContent = (total-done) + ' ' + pluralTasks(total-done) + ' ещё осталось.'; }
+  }
+  function pluralTasks(n){
+    var mod10=n%10, mod100=n%100;
+    if(mod10===1 && mod100!==11) return 'задача';
+    if([2,3,4].indexOf(mod10)>=0 && [12,13,14].indexOf(mod100)<0) return 'задачи';
+    return 'задач';
+  }
+
+  function renderCategories(){
+    var list = document.getElementById('categoriesList');
+    list.innerHTML = '';
+    if(state.categories.length === 0){
+      list.innerHTML = '<div class="empty-state"><div class="display">Пока пусто</div>Добавьте первую категорию, например «Кухня» или «Спальня».</div>';
+      return;
+    }
+    state.categories.forEach(function(cat){
+      list.appendChild(renderCategory(cat));
+    });
+  }
+
+  function renderCategory(cat){
+    var totalTasks = 0, dueOrDone = 0, doneNow = 0;
+    cat.subcategories.forEach(function(s){
+      s.tasks.forEach(function(t){
+        totalTasks++;
+        if(isDue(t) || isDoneToday(t)){ dueOrDone++; if(isDoneToday(t)) doneNow++; }
+      });
+    });
+
+    var el = document.createElement('div');
+    el.className = 'category' + (cat.open ? ' open' : '');
+    el.style.setProperty('--cat-color', cat.color);
+
+    var head = document.createElement('div');
+    head.className = 'category-head';
+    head.innerHTML =
+      '<span class="category-emoji">' + escapeHtml(cat.icon) + '</span>' +
+      '<div class="category-name"><div class="display">' + escapeHtml(cat.name) + '</div>' +
+      '<div class="category-sub-count">' + cat.subcategories.length + ' ' + pluralSub(cat.subcategories.length) + '</div></div>' +
+      '<span class="badge">' + doneNow + '/' + dueOrDone + '</span>' +
+      '<button class="menu-btn" data-action="edit-cat" data-cat="' + cat.id + '" aria-label="Изменить категорию">⋮</button>' +
+      '<span class="chevron">⌄</span>';
+    head.addEventListener('click', function(e){
+      if(e.target.closest('[data-action]')) return;
+      cat.open = !cat.open; saveState(); render();
+    });
+    el.appendChild(head);
+
+    var body = document.createElement('div');
+    body.className = 'category-body';
+
+    cat.subcategories.forEach(function(sub){
+      body.appendChild(renderSubcategory(cat, sub));
+    });
+
+    var addSub = document.createElement('div');
+    addSub.className = 'add-subcat-row';
+    addSub.innerHTML = '<button class="small-add" data-action="add-sub" data-cat="' + cat.id + '">＋ Подкатегория</button>';
+    body.appendChild(addSub);
+
+    el.appendChild(body);
+    return el;
+  }
+  function pluralSub(n){
+    var mod10=n%10, mod100=n%100;
+    if(mod10===1 && mod100!==11) return 'подкатегория';
+    if([2,3,4].indexOf(mod10)>=0 && [12,13,14].indexOf(mod100)<0) return 'подкатегории';
+    return 'подкатегорий';
+  }
+
+  function renderSubcategory(cat, sub){
+    var el = document.createElement('div');
+    el.className = 'subcategory';
+
+    var head = document.createElement('div');
+    head.className = 'subcategory-head';
+    head.innerHTML =
+      '<span class="sub-name">' + escapeHtml(sub.name) + '</span>' +
+      '<button class="small-add" data-action="add-task" data-cat="' + cat.id + '" data-sub="' + sub.id + '">＋ Задача</button>' +
+      '<button class="menu-btn" data-action="edit-sub" data-cat="' + cat.id + '" data-sub="' + sub.id + '" aria-label="Изменить подкатегорию">⋮</button>';
+    el.appendChild(head);
+
+    sub.tasks.forEach(function(t){
+      el.appendChild(renderTask(cat, sub, t));
+    });
+
+    return el;
+  }
+
+  function renderTask(cat, sub, t){
+    var row = document.createElement('div');
+    row.className = 'task-row';
+    var done = isDoneToday(t);
+    var overdue = isOverdue(t) && !done;
+    var freqLabel = t.frequencyDays === null ? FREQ_LABELS.once : FREQ_LABELS[String(t.frequencyDays)];
+
+    row.innerHTML =
+      '<button class="task-check' + (done ? ' done' : '') + '" data-action="toggle-task" data-cat="' + cat.id + '" data-sub="' + sub.id + '" data-task="' + t.id + '" aria-label="Отметить выполненным">' + (done ? '✓' : '') + '</button>' +
+      '<span class="task-name' + (done ? ' done' : '') + '">' + escapeHtml(t.name) + '</span>' +
+      '<span class="freq-chip' + (overdue ? ' overdue' : '') + '">' + (overdue ? 'Просрочено' : freqLabel) + '</span>' +
+      '<button class="menu-btn" data-action="edit-task" data-cat="' + cat.id + '" data-sub="' + sub.id + '" data-task="' + t.id + '" aria-label="Изменить задачу">⋮</button>';
+    return row;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ---------- Delegated actions ----------
+  document.getElementById('categoriesList').addEventListener('click', function(e){
+    var btn = e.target.closest('[data-action]');
+    if(!btn) return;
+    var action = btn.dataset.action;
+    var catId = btn.dataset.cat, subId = btn.dataset.sub, taskId = btn.dataset.task;
+
+    if(action === 'edit-cat') openCategoryModal(findCat(catId));
+    else if(action === 'add-sub') openSubcatModal(findCat(catId), null);
+    else if(action === 'edit-sub') openSubcatModal(findCat(catId), findSub(catId,subId));
+    else if(action === 'add-task') openTaskModal(findCat(catId), findSub(catId,subId), null);
+    else if(action === 'edit-task') openTaskModal(findCat(catId), findSub(catId,subId), findTask(catId,subId,taskId));
+    else if(action === 'toggle-task'){
+      var t = findTask(catId,subId,taskId);
+      if(t.frequencyDays === null){ t.doneOnce = !t.doneOnce; }
+      else { t.lastDone = (t.lastDone === todayStr()) ? null : todayStr(); }
+      saveState(); render();
+    }
+  });
+
+  function findCat(id){ return state.categories.find(function(c){ return c.id===id; }); }
+  function findSub(catId,subId){ var c=findCat(catId); return c ? c.subcategories.find(function(s){ return s.id===subId; }) : null; }
+  function findTask(catId,subId,taskId){ var s=findSub(catId,subId); return s ? s.tasks.find(function(t){ return t.id===taskId; }) : null; }
+
+  // ---------- Category modal ----------
+  var editingCatId = null;
+  function openCategoryModal(cat){
+    editingCatId = cat ? cat.id : null;
+    document.getElementById('categoryModalTitle').textContent = cat ? 'Изменить категорию' : 'Новая категория';
+    document.getElementById('categoryNameInput').value = cat ? cat.name : '';
+    document.getElementById('categoryColorInput').value = cat ? cat.color : '#4F7A68';
+    buildEmojiGrid(cat ? cat.icon : CATEGORY_EMOJIS[0]);
+    document.getElementById('categoryDeleteBtn').style.display = cat ? 'block' : 'none';
+    show('categoryOverlay');
+  }
+  function buildEmojiGrid(selected){
+    var grid = document.getElementById('categoryEmojiGrid');
+    grid.innerHTML = '';
+    CATEGORY_EMOJIS.forEach(function(em){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'emoji-opt' + (em === selected ? ' selected' : '');
+      b.textContent = em;
+      b.addEventListener('click', function(){
+        grid.querySelectorAll('.emoji-opt').forEach(function(x){ x.classList.remove('selected'); });
+        b.classList.add('selected');
+      });
+      grid.appendChild(b);
+    });
+  }
+  document.getElementById('addCategoryBtn').addEventListener('click', function(){ openCategoryModal(null); });
+  document.getElementById('categoryCancelBtn').addEventListener('click', function(){ hide('categoryOverlay'); });
+  document.getElementById('categorySaveBtn').addEventListener('click', function(){
+    var name = document.getElementById('categoryNameInput').value.trim();
+    if(!name){ showToast('Введите название категории'); return; }
+    var selectedEmoji = document.querySelector('#categoryEmojiGrid .emoji-opt.selected');
+    var icon = selectedEmoji ? selectedEmoji.textContent : CATEGORY_EMOJIS[0];
+    var color = document.getElementById('categoryColorInput').value;
+    if(editingCatId){
+      var cat = findCat(editingCatId);
+      cat.name = name; cat.icon = icon; cat.color = color;
+    } else {
+      state.categories.push({ id:genId(), name:name, icon:icon, color:color, open:true, subcategories:[] });
+    }
+    saveState(); render(); hide('categoryOverlay');
+  });
+  document.getElementById('categoryDeleteBtn').addEventListener('click', function(){
+    if(!confirm('Удалить категорию вместе со всеми подкатегориями и задачами?')) return;
+    state.categories = state.categories.filter(function(c){ return c.id !== editingCatId; });
+    saveState(); render(); hide('categoryOverlay');
+  });
+
+  // ---------- Subcategory modal ----------
+  var editingSubCatId = null, editingSubId = null;
+  function openSubcatModal(cat, sub){
+    editingSubCatId = cat.id; editingSubId = sub ? sub.id : null;
+    document.getElementById('subcatModalTitle').textContent = sub ? 'Изменить подкатегорию' : 'Новая подкатегория';
+    document.getElementById('subcatNameInput').value = sub ? sub.name : '';
+    document.getElementById('subcatDeleteBtn').style.display = sub ? 'block' : 'none';
+    show('subcatOverlay');
+  }
+  document.getElementById('subcatCancelBtn').addEventListener('click', function(){ hide('subcatOverlay'); });
+  document.getElementById('subcatSaveBtn').addEventListener('click', function(){
+    var name = document.getElementById('subcatNameInput').value.trim();
+    if(!name){ showToast('Введите название подкатегории'); return; }
+    var cat = findCat(editingSubCatId);
+    if(editingSubId){
+      var sub = findSub(editingSubCatId, editingSubId);
+      sub.name = name;
+    } else {
+      cat.subcategories.push({ id:genId(), name:name, tasks:[] });
+    }
+    saveState(); render(); hide('subcatOverlay');
+  });
+  document.getElementById('subcatDeleteBtn').addEventListener('click', function(){
+    if(!confirm('Удалить подкатегорию вместе со всеми задачами?')) return;
+    var cat = findCat(editingSubCatId);
+    cat.subcategories = cat.subcategories.filter(function(s){ return s.id !== editingSubId; });
+    saveState(); render(); hide('subcatOverlay');
+  });
+
+  // ---------- Task modal ----------
+  var editingTaskCatId=null, editingTaskSubId=null, editingTaskId=null;
+  function openTaskModal(cat, sub, task){
+    editingTaskCatId = cat.id; editingTaskSubId = sub.id; editingTaskId = task ? task.id : null;
+    document.getElementById('taskModalTitle').textContent = task ? 'Изменить задачу' : 'Новая задача';
+    document.getElementById('taskNameInput').value = task ? task.name : '';
+    document.getElementById('taskFreqInput').value = task ? (task.frequencyDays === null ? 'once' : String(task.frequencyDays)) : '7';
+    document.getElementById('taskDeleteBtn').style.display = task ? 'block' : 'none';
+    show('taskOverlay');
+  }
+  document.getElementById('taskCancelBtn').addEventListener('click', function(){ hide('taskOverlay'); });
+  document.getElementById('taskSaveBtn').addEventListener('click', function(){
+    var name = document.getElementById('taskNameInput').value.trim();
+    if(!name){ showToast('Введите название задачи'); return; }
+    var freqVal = document.getElementById('taskFreqInput').value;
+    var freq = freqVal === 'once' ? null : parseInt(freqVal, 10);
+    var sub = findSub(editingTaskCatId, editingTaskSubId);
+    if(editingTaskId){
+      var t = findTask(editingTaskCatId, editingTaskSubId, editingTaskId);
+      t.name = name; t.frequencyDays = freq;
+    } else {
+      sub.tasks.push({ id:genId(), name:name, frequencyDays:freq, lastDone:null, doneOnce:false });
+    }
+    saveState(); render(); hide('taskOverlay');
+  });
+  document.getElementById('taskDeleteBtn').addEventListener('click', function(){
+    if(!confirm('Удалить эту задачу?')) return;
+    var sub = findSub(editingTaskCatId, editingTaskSubId);
+    sub.tasks = sub.tasks.filter(function(t){ return t.id !== editingTaskId; });
+    saveState(); render(); hide('taskOverlay');
+  });
+
+  // ---------- Settings / theme ----------
+  document.getElementById('settingsBtn').addEventListener('click', function(){
+    document.getElementById('bgColorInput').value = state.theme.bg;
+    document.getElementById('textColorInput').value = state.theme.text;
+    document.getElementById('surfaceColorInput').value = state.theme.surface;
+    document.getElementById('accentColorInput').value = state.theme.accent;
+    document.getElementById('clearBgImageBtn').style.display = state.theme.bgImage ? 'inline' : 'none';
+    buildPresetRow();
+    show('settingsOverlay');
+  });
+  document.getElementById('settingsCloseBtn').addEventListener('click', function(){ hide('settingsOverlay'); });
+
+  function buildPresetRow(){
+    var row = document.getElementById('presetRow');
+    row.innerHTML = '';
+    PRESETS.forEach(function(p){
+      var b = document.createElement('button');
+      b.className = 'preset-swatch';
+      b.innerHTML = '<span class="dot" style="background:' + p.bg + '; border-color:' + p.accent + ';"></span>' + p.name;
+      b.addEventListener('click', function(){
+        state.theme.bg = p.bg; state.theme.surface = p.surface; state.theme.text = p.text;
+        state.theme.textSecondary = p.textSecondary; state.theme.accent = p.accent;
+        applyTheme(); saveState();
+        document.getElementById('bgColorInput').value = p.bg;
+        document.getElementById('textColorInput').value = p.text;
+        document.getElementById('surfaceColorInput').value = p.surface;
+        document.getElementById('accentColorInput').value = p.accent;
+      });
+      row.appendChild(b);
+    });
+  }
+
+  document.getElementById('bgColorInput').addEventListener('input', function(e){
+    state.theme.bg = e.target.value; applyTheme(); saveState();
+  });
+  document.getElementById('textColorInput').addEventListener('input', function(e){
+    state.theme.text = e.target.value; applyTheme(); saveState();
+  });
+  document.getElementById('surfaceColorInput').addEventListener('input', function(e){
+    state.theme.surface = e.target.value; applyTheme(); saveState();
+  });
+  document.getElementById('accentColorInput').addEventListener('input', function(e){
+    state.theme.accent = e.target.value; applyTheme(); saveState();
+  });
+  document.getElementById('bgImageInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    if(file.size > 4.5*1024*1024){ showToast('Изображение слишком большое (макс. ~4 МБ)'); return; }
+    var reader = new FileReader();
+    reader.onload = function(){
+      state.theme.bgImage = reader.result;
+      applyTheme(); saveState();
+      document.getElementById('clearBgImageBtn').style.display = 'inline';
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('clearBgImageBtn').addEventListener('click', function(){
+    state.theme.bgImage = null; applyTheme(); saveState();
+    document.getElementById('clearBgImageBtn').style.display = 'none';
+  });
+  document.getElementById('resetThemeBtn').addEventListener('click', function(){
+    state.theme = defaultTheme(); applyTheme(); saveState();
+    document.getElementById('bgColorInput').value = state.theme.bg;
+    document.getElementById('textColorInput').value = state.theme.text;
+    document.getElementById('surfaceColorInput').value = state.theme.surface;
+    document.getElementById('accentColorInput').value = state.theme.accent;
+    document.getElementById('clearBgImageBtn').style.display = 'none';
+    showToast('Оформление сброшено');
+  });
+
+  // ---------- Install to home screen ----------
+  var deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+  document.getElementById('installHelpBtn').addEventListener('click', function(){
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPhone|iPad|iPod/.test(ua);
+    var isAndroid = /Android/.test(ua);
+    var html = '';
+    if(isIOS){
+      html = '<p>В браузере Safari:</p><ol><li>Нажмите кнопку <b>Поделиться</b> внизу экрана.</li><li>Выберите <b>«На экран «Домой»»</b>.</li><li>Нажмите <b>«Добавить»</b> — иконка появится на главном экране.</li></ol>';
+    } else if(isAndroid){
+      html = '<p>В браузере Chrome:</p><ol><li>Откройте меню (значок ⋮ в правом верхнем углу).</li><li>Выберите <b>«Добавить на главный экран»</b> или <b>«Установить приложение»</b>.</li><li>Подтвердите — иконка появится на главном экране телефона.</li></ol>';
+    } else {
+      html = '<p>Откройте эту страницу в браузере телефона (Safari или Chrome), затем:</p><ul><li><b>iPhone (Safari):</b> кнопка «Поделиться» → «На экран «Домой»».</li><li><b>Android (Chrome):</b> меню ⋮ → «Добавить на главный экран».</li></ul>';
+    }
+    document.getElementById('installStepsText').innerHTML = html;
+    show('installOverlay');
+  });
+  document.getElementById('installCloseBtn').addEventListener('click', function(){ hide('installOverlay'); });
+
+  // ---------- Modal helpers ----------
+  function show(id){ document.getElementById(id).classList.add('show'); }
+  function hide(id){ document.getElementById(id).classList.remove('show'); }
+  document.querySelectorAll('.overlay').forEach(function(ov){
+    ov.addEventListener('click', function(e){ if(e.target === ov) ov.classList.remove('show'); });
+  });
+
+  var toastTimer = null;
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  // ---------- Init ----------
+  (async function init(){
+    await loadState();
+    applyTheme();
+    render();
+  })();
+
+})();
+</script>
+</body>
+</html>
